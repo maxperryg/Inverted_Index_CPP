@@ -8,47 +8,63 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <map>
+#include <list>
 using namespace std;
 
-void addWordToMap(string word, map<string,int> &invertedIndex){
+void addWordToMap(string word, map<string,pair<int,list<pair<int,int>>>> &invertedIndex, int lineNumber, int lineIndex){
     for_each(word.begin(), word.end(), [](char & c){
         c = ::tolower(c);
     });
-    if(invertedIndex.find(word) == invertedIndex.end())
-        invertedIndex.insert({word,1});
-    else
-        invertedIndex.at(word)++;
+    if(invertedIndex.find(word) == invertedIndex.end()){
+        list<pair<int,int>> locations;
+        locations.push_back({lineNumber,lineIndex});
+        invertedIndex.insert({word,{1,locations}});
+    }
+    else{
+        invertedIndex.at(word).first++;
+        invertedIndex.at(word).second.push_back({lineNumber,lineIndex});
+    }
 }
-
-void scanLine(string line, map<string,int> &invertedIndex){
-    int counter=0;
+void scanLine(string line, map<string,pair<int,list<pair<int,int>>>> &invertedIndex, int lineNumber){
     string word;
-    for(short i=0;i<line.length();i++){
+    int i = 0;
+    while(i<line.length()){
+        while(line[i] != ' '&& line[i] != ',' && line[i] != '.' && line[i] != '-'){
+            word += line[i++];
+        }
+        addWordToMap(word, invertedIndex, lineNumber, i);
+        word="";
         while(line[i] == ' '|| line[i] == ',' || line[i] == '.' || line[i] == '-'){
-            counter++;
             i++;
         }
-        word += line[i];
     }
+}
+string listToString(list<pair<int,int>> listOfPairs){
+    stringstream ans;
+    ans<<"[ ";
+    for(auto it = listOfPairs.begin(); it != listOfPairs.end(); ++it)
+        ans <<"("<<it->first<<","<<it->second<<") ";
+    ans <<" ]";
     
+    return ans.str();
 }
 
 int main(){
     string line;
-    map<string,int> invertedIndex;
+    map<string,pair<int,list<pair<int,int>>>> invertedIndex;
     ifstream inputFile;
     inputFile.open("//Users/MaxGrossman/Documents/C++WorkSpace/Inverted_Index_CPP/Inverted_Index_CPP/Gettysburg Address.txt");
-
+    
+    int lineNumber=1;
     while(getline(inputFile,line)){
-        scanLine(line, invertedIndex);
+        scanLine(line, invertedIndex, lineNumber++);
     }
     inputFile.close();
     
-    cout << "\tWord\tFrequency\n";
     for (auto i = invertedIndex.begin(); i != invertedIndex.end(); ++i) {
-        cout << '\t' << i->first
-        << '\t' << i->second << '\n';
+        cout<<i->first<<" "<<i->second.first<<listToString(i->second.second)<<endl;
     }
     cout << endl;
     return 0;
